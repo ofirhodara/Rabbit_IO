@@ -3,7 +3,7 @@ version: '1.0'
 services:
   rabbitmq:
     image: rabbitmq:3-management-alpine
-    container_name: 'rabbitmq'
+    container_name: rabbit-mq
     ports:
       - 5672:5672
       - 15672:15672
@@ -12,7 +12,7 @@ services:
 
   parser:
       build: .
-      container_name: 'my-parser'
+      container_name: my-parser
       ports:
       - 8001:5001
 
@@ -20,7 +20,14 @@ services:
   elasticsearch:
     container_name: es-container
     image: docker.elastic.co/elasticsearch/elasticsearch:7.11.0
-
+    environment:
+      - discovery.type=single-node
+      - node.name=es01
+      - bootstrap.memory_lock=true
+    networks:
+      - elastic
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
     ports:
       - 9200:9200
 
@@ -28,16 +35,15 @@ services:
   kibana:
       container_name: kb-container
       image: docker.elastic.co/kibana/kibana:7.11.0
-      environment:
-        - ELASTICSEARCH_HOSTS=http://es-container:9200
+      networks:
+        - elastic
       depends_on:
         - elasticsearch
       ports:
         - 5601:5601
 
-  fluent-bit:
-    image: fluent/fluent-bit
-    volumes:
-      - ./fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf
-    depends_on:
-      - elasticsearch
+volumes:
+ esdata:
+
+networks:
+  elastic:
