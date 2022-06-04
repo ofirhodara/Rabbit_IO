@@ -1,2 +1,3 @@
 if __name__ == '__main__':
-    print("ofir")
+    for i in range(0, 10):
+        print("ofir")
