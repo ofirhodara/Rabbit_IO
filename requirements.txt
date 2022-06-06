@@ -1,1 +1,1 @@
-elasticsearch==7.17.0
+ecs_logging==2.0.0

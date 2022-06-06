@@ -13,6 +13,8 @@ services:
   parser:
       build: .
       container_name: my-parser
+      volumes:
+        - ./src:/app/src
       ports:
       - 8001:5001
 
