@@ -1,5 +1,6 @@
 import functools
 import json
+import sys
 import pika
 import yaml
 from pika.exchange_type import ExchangeType
@@ -18,9 +19,15 @@ consoleHandler = logging.StreamHandler(stdout)
 consoleHandler.setFormatter(ecs_logging.StdlibFormatter())
 LOGGER.addHandler(consoleHandler)
 
-# config file
-with open(Config.PATH) as f:
-    config = yaml.load(f, Loader=yaml.FullLoader)['mq_config']['consumer']
+
+try:
+    # config file
+    with open(Config.PATH) as f:
+        config = yaml.load(f, Loader=yaml.FullLoader)['producer']
+
+except Exception as e:
+    LOGGER.fatal("Failed to parse config file on Sender")
+    sys.exit()
 
 class Sender(object):
     """This is an example publisher that will handle unexpected interactions
@@ -32,12 +39,6 @@ class Sender(object):
     It uses delivery confirmations and illustrates one way to keep track of
     messages that have been sent and if they've been confirmed by RabbitMQ.
     """
-    EXCHANGE = config['exchange']
-    EXCHANGE_TYPE = ExchangeType.fanout
-    PUBLISH_INTERVAL = int(config['publish_interval'])
-    QUEUE = config['queue']
-    ROUTING_KEY = config['routing']
-
     def __init__(self, amqp_url):
         """Setup the example publisher object, passing in the URL we will use
         to connect to RabbitMQ.
@@ -53,6 +54,13 @@ class Sender(object):
 
         self._stopping = False
         self._url = amqp_url
+
+        # queue parameters
+        self.exchange_type = ExchangeType.fanout
+        self.publish_interval = int(config['publish_interval'])
+        self.queue = config['queue']
+        self.routing_key = config['routing']
+        self.exchange = config['exchange']
 
     def connect(self):
         """This method connects to RabbitMQ, returning the connection handle.
@@ -119,7 +127,7 @@ class Sender(object):
         LOGGER.info('Channel opened')
         self._channel = channel
         self.add_on_channel_close_callback()
-        self.setup_exchange(self.EXCHANGE)
+        self.setup_exchange(self.exchange)
 
     def add_on_channel_close_callback(self):
         """This method tells pika to call the on_channel_closed method if
@@ -155,7 +163,7 @@ class Sender(object):
             self.on_exchange_declareok, userdata=exchange_name)
         self._channel.exchange_declare(
             exchange=exchange_name,
-            exchange_type=self.EXCHANGE_TYPE,
+            exchange_type=self.exchange_type,
             callback=cb)
 
     def on_exchange_declareok(self, _unused_frame, userdata):
@@ -165,7 +173,7 @@ class Sender(object):
         :param str|unicode userdata: Extra user data (exchange name)
         """
         LOGGER.info('Exchange declared: %s', userdata)
-        self.setup_queue(self.QUEUE)
+        self.setup_queue(self.queue)
 
     def setup_queue(self, queue_name):
         """Setup the queue on RabbitMQ by invoking the Queue.Declare RPC
@@ -185,12 +193,12 @@ class Sender(object):
         be invoked by pika.
         :param pika.frame.Method method_frame: The Queue.DeclareOk frame
         """
-        LOGGER.info('Binding %s to %s with %s', self.EXCHANGE, self.QUEUE,
-                    self.ROUTING_KEY)
+        LOGGER.info('Binding %s to %s with %s', self.exchange, self.queue,
+                    self.routing_key)
         self._channel.queue_bind(
-            self.QUEUE,
-            self.EXCHANGE,
-            routing_key=self.ROUTING_KEY,
+            self.queue,
+            self.exchange,
+            routing_key=self.routing_key,
             callback=self.on_bindok)
 
     def on_bindok(self, _unused_frame):
@@ -249,8 +257,8 @@ class Sender(object):
         message to be delivered in PUBLISH_INTERVAL seconds.
         """
         LOGGER.info('Scheduling next message for %0.1f seconds',
-                    self.PUBLISH_INTERVAL)
-        self._connection.ioloop.call_later(self.PUBLISH_INTERVAL,
+                    self.publish_interval)
+        self._connection.ioloop.call_later(self.publish_interval,
                                            self.publish_message)
 
     def publish_message(self):
@@ -268,15 +276,18 @@ class Sender(object):
             return
 
         hdrs = {u'مفتاح': u' قيمة', u'键': u'值', u'キー': u'値'}
+
         properties = pika.BasicProperties(
-            app_id='example-publisher',
+            app_id='publisher',
             content_type='application/json',
             headers=hdrs)
 
-        message = u'مفتاح قيمة 键 值 キー 値'
-        self._channel.basic_publish(self.EXCHANGE, self.ROUTING_KEY,
+        message = 'hi world!'
+
+        self._channel.basic_publish(self.exchange, self.routing_key,
                                     json.dumps(message, ensure_ascii=False),
                                     properties)
+
         self._message_number += 1
         self._deliveries.append(self._message_number)
         LOGGER.info('Published message # %i', self._message_number)
@@ -295,10 +306,11 @@ class Sender(object):
             try:
                 self._connection = self.connect()
                 self._connection.ioloop.start()
+
             except KeyboardInterrupt:
                 self.stop()
                 if (self._connection is not None and
-                        not self._connection.is_closed):
+                    not self._connection.is_closed):
                     # Finish closing
                     self._connection.ioloop.start()
 

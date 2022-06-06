@@ -3,7 +3,9 @@ import time
 import ecs_logging
 from sys import stdout
 import yaml
+from src.rabbit.sender import Sender
 from src.consts import Config
+from pika.exchange_type import ExchangeType
 
 # Define logger
 logger = logging.getLogger('mylogger')
@@ -24,11 +26,8 @@ with open(Config.PATH) as f:
 def run():
     # send messages
     # start to read message
-    for i in range(0, 5):
-        message = f"Write log number {i}"
-        logger.debug(message +" - Hi world!")
-        time.sleep(3)
-    pass
+    sender = Sender('amqp://guest:guest@localhost:5672/%2F?connection_attempts=3&heartbeat=3600')
+    sender.run()
 
 
 if __name__ == '__main__':

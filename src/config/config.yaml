@@ -1,11 +1,12 @@
-mq_config:
+rabbit_mq:
   host: 127.0.0.1
   port: 5672
-  consumer:
-    - exchange: 'message'
-    - publish_interval: 1
-    - queue: 'cerf'
-    - routing: '/'
+
+producer:
+  exchange: 'message'
+  publish_interval: 0.25
+  queue: 'cerf'
+  routing: '/'
 
 kibana_config:
   port: 5601
