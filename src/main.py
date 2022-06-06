@@ -1,11 +1,10 @@
 import logging
-import time
-import ecs_logging
 from sys import stdout
+import ecs_logging
 import yaml
 from src.rabbit.sender import Sender
 from src.consts import Config
-from pika.exchange_type import ExchangeType
+import ecs_logging
 
 # Define logger
 logger = logging.getLogger('mylogger')
