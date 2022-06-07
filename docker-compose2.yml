@@ -1,0 +1,20 @@
+version: '1.0'
+
+services:
+  parser:
+    build: .
+    container_name: my-parser
+    ports:
+      - 9000:9000
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbit-mq
+    ports:
+      - 5672:5672
+      - 15672:15672
+    volumes:
+      - ~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq
+
+
+

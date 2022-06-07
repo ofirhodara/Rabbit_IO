@@ -2,12 +2,13 @@ import functools
 import json
 import sys
 import pika
+import os
 import yaml
 from pika.exchange_type import ExchangeType
 import logging
 import ecs_logging
 from sys import stdout
-from src.consts import Config
+
 
 
 # Define logger
@@ -19,10 +20,9 @@ consoleHandler = logging.StreamHandler(stdout)
 consoleHandler.setFormatter(ecs_logging.StdlibFormatter())
 LOGGER.addHandler(consoleHandler)
 
-
 try:
     # config file
-    with open(Config.PATH) as f:
+    with open('./config/config.yaml') as f:
         config = yaml.load(f, Loader=yaml.FullLoader)['producer']
 
 except Exception as e:
@@ -304,8 +304,9 @@ class Sender(object):
             self._message_number = 0
 
             try:
-                self._connection = self.connect()
-                self._connection.ioloop.start()
+                # self._connection = self.connect()
+                # self._connection.ioloop.start()
+                pass
 
             except KeyboardInterrupt:
                 self.stop()

@@ -2,9 +2,15 @@ import logging
 from sys import stdout
 import ecs_logging
 import yaml
+import os
+import sys
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.dirname(SCRIPT_DIR))
+
 from src.rabbit.sender import Sender
 from src.consts import Config
-import ecs_logging
+
 
 # Define logger
 logger = logging.getLogger('mylogger')
@@ -31,4 +37,3 @@ def run():
 
 if __name__ == '__main__':
     run()
-
